@@ -8,7 +8,7 @@ from folium.plugins import HeatMap
 from folium.features import DivIcon
 from geopy.distance import geodesic
 import base64
-    
+
 # In the sidebar, add the widgets for the app
 # load the logo image and convert it to base64
 logo = open("./static/logo_clipped.png", 'rb').read()
