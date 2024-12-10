@@ -9,15 +9,16 @@ from tqdm import tqdm
 from geopy.distance import geodesic
 from apikey import API_KEY
 
-folder_path = "nov_dec_2019_photos"
+folder_path = "nov_dec_2023_photos"
 random.seed(42)
 total = len(os.listdir(folder_path))
-num_photos = 200
-#Change below to [200:] to avoid redoing
-file_list = random.sample(sorted(os.listdir(folder_path)), total)[0:num_photos]
+num_photos = 500
+start_index = 0
+#Change start index to 500 to test the rest
+file_list = random.sample(sorted(os.listdir(folder_path)), total)[start_index:start_index+num_photos]
 np.save("Analyzed_list" + "_" + folder_path, file_list)
 
-df = pd.read_csv("nov_dec_2019.csv")
+df = pd.read_csv("nov_dec_2023.csv")
 
 use_database_search = True
 num_nearest_neighbors = 8
@@ -64,7 +65,7 @@ accuracies /= total
 print(str(total) + " out of " + str(num_photos) + " successfully analyzed.")
 print(accuracies)
     
-np.save(folder_path + '_' + str(total) + '_of_' + str(num_photos), accuracies)
+np.save(folder_path + '_accuracies_' + str(total) + '_of_' + str(num_photos), accuracies)
 
 
 
