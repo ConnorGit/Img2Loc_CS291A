@@ -234,8 +234,6 @@ class GPT4v2Loc:
                 self.question=f"Suppose you are an expert in geo-localization. Please analyze this image and give me a guess of the location. Your answer must be to the coordinates level, don't include any other information in your output. You can give me a guessed anwser."
             
             # Create the payload and the headers for the API request
-            print("QUESTION:")
-            print(self.question)
             payload = self.create_payload(self.question)
             headers = {
                 "Content-Type": "application/json",
@@ -247,8 +245,6 @@ class GPT4v2Loc:
             response.raise_for_status()
             response_data = response.json()
             
-            print("RESPONSE:")
-            print(response_data)
             return response_data['choices'][0]['message']['content']
         except RequestException as e:
             raise ValueError(f"Error in API request: {e}")
