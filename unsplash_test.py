@@ -11,7 +11,7 @@ from apikey import API_KEY
 
 folder_path = "nov_dec_2023_photos"
 random.seed(42)
-num_photos = 200
+num_photos = 1
 file_list = random.sample(sorted(os.listdir(folder_path)), num_photos)
 
 df = pd.read_csv("nov_dec_2023.csv")
