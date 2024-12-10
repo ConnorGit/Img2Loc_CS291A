@@ -62,7 +62,7 @@ print(str(total) + " out of " + str(num_photos) + " successfully analyzed.")
 print(accuracies)
     
 
-np.save(folder_path + ' ' + str(total) + '_of_' + str(num_photos))
+np.save(folder_path + '_' + str(total) + '_of_' + str(num_photos), accuracies)
 
 
 
