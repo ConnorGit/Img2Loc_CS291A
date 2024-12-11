@@ -12,7 +12,7 @@ from apikey import API_KEY
 folder_path = "nov_dec_2023_photos"
 random.seed(42)
 total = len(os.listdir(folder_path))
-num_photos = 20
+num_photos = 500
 start_index = 0
 #Change start index to 500 to test the rest
 file_list = random.sample(sorted(os.listdir(folder_path)), total)[start_index:start_index+num_photos]
