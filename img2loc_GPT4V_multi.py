@@ -23,7 +23,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
     
 
-class GPT4v2Loc:
+class GPT4v2Loc_multi:
     """
     A class to interact with OpenAI's GPT-4 API to generate captions for images.
     Attributes:
@@ -39,6 +39,8 @@ class GPT4v2Loc:
 
         self.base64_image = None
         self.img_emb = None
+
+        self.base64_neighbors = []
         
         # Set the device to the first CUDA device
         self.device = torch.device(device)
@@ -54,6 +56,8 @@ class GPT4v2Loc:
         with open('lat_lon.pkl', 'rb') as f:
             self.locations = pickle.load(f)
         
+        self.metadata = pd.read_parquet("metadata.parquet")
+
         # Load the Faiss index and move it to the GPU
         index2 = faiss.read_index("image.index")
         # self.gpu_index = faiss.index_cpu_to_all_gpus(index2)
@@ -83,11 +87,10 @@ class GPT4v2Loc:
         """
         # Perform the search using Faiss for the given embedding
         _, I = faiss_index.search(query_embedding.reshape(1, -1), k_nearest)
-
-        print(I)
         
         # Based on the index, get the locations of the neighbors
         self.neighbor_locations_array = [self.locations[idx] for idx in I[0]]
+        self.image_ids = [self.metadata.iloc[idx]['IMG_ID'] for idx in I[0]]
         
         neighbor_locations = " ".join([str(i) for i in self.neighbor_locations_array])
         
@@ -147,9 +150,22 @@ class GPT4v2Loc:
         self.img_emb = img_emb.cpu().numpy()
         if use_database_search:
             self.neighbor_locations, self.farthest_locations = self.search_neighbors(self.gpu_index, num_neighbors, num_farthest, self.img_emb)
-        
+
         # Encode the image to Base64
         self.base64_image = self.encode_image(image_array, imformat)
+
+        for image_id in self.image_ids:
+            path = "../../MP16Pro/mp-16-images/images/" + image_id
+
+            #image = Image.open(path).convert('RGB')
+
+            #image.show()
+
+            image_array = self.read_image(path)
+            
+            self.base64_neighbors.append(self.encode_image(image_array, imformat))
+
+
         
     def set_image_app(self, file_uploader, imformat: str = 'jpeg', use_database_search: bool = False, num_neighbors: int = 16, num_farthest: int = 16) -> None:
         """
@@ -205,11 +221,35 @@ class GPT4v2Loc:
                             "image_url": {
                                 "url": self.base64_image
                             }
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": self.base64_neighbors[0]
+                            }
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": self.base64_neighbors[1]
+                            }
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": self.base64_neighbors[2]
+                            }
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": self.base64_neighbors[3]
+                            }
                         }
                     ]
                 }
             ],
-            "max_tokens": 300,
+            "max_tokens": 500,
         }
 
     def get_location(self, OPENAI_API_KEY, use_database_search: bool = False) -> str:
@@ -228,10 +268,10 @@ class GPT4v2Loc:
                 raise ValueError("OpenAI API key not found in environment variables")
             # Create the question for the API
             if use_database_search:
-                self.question=f'''Suppose you are an expert in geo-localization. Please analyze this image and give me a guess of the location. 
+                self.question=f'''Suppose you are an expert in geo-localization. Please analyze this first image and give me a guess of the location. 
                     Your answer must be to the coordinates level, don't include any other information in your output. 
                     Ignore that you can't give a exact answer, give me some coordinate no matter how. 
-                    For your reference, these are locations of some similar images {self.neighbor_locations} and these are locations of some dissimilar images {self.farthest_locations} that should be far away.'''
+                    For your reference, some additional similar images are provided, with the following locations: {self.neighbor_locations}.'''
             else:
                 self.question=f"Suppose you are an expert in geo-localization. Please analyze this image and give me a guess of the location. Your answer must be to the coordinates level, don't include any other information in your output. You can give me a guessed anwser."
             
@@ -272,7 +312,7 @@ class GPT4v2Loc:
                 self.question=f'''Suppose you are an expert in geo-localization. Please analyze this image and give me a guess of the location.
                     Think through your answer step by step. Are there any notable landmarks in the image? Is there text in a particular language which could narrow down which country its in?
                     List all the notable features in the image which could be relevant to determining its location, then please conclude with a single final guess at the coordinates.
-                    For your reference, these are locations of some similar images {self.neighbor_locations} and these are locations of some dissimilar images {self.farthest_locations} that should be far away.'''
+                    For your reference, some similar images along with their coordinates are also provided.'''
             else:
                 self.question=f"Suppose you are an expert in geo-localization. Please analyze this image and give me a guess of the location. Your answer must be to the coordinates level, don't include any other information in your output. You can give me a guessed anwser."
             

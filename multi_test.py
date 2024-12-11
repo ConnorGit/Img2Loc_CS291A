@@ -1,18 +1,20 @@
+from PIL import Image
 import os
 import random
 import pandas as pd
 import numpy as np
-from img2loc_GPT4V import GPT4v2Loc
+from img2loc_GPT4V_multi import GPT4v2Loc_multi
 import re
 from tqdm import tqdm
 
+#from img2loc_GPT4V import GPT4v2Loc
 from geopy.distance import geodesic
 from apikey import API_KEY
 
 folder_path = "im2gps3ktest"
 random.seed(42)
 total = len(os.listdir(folder_path))
-num_photos = 300
+num_photos = 400
 start_index = 0
 #Change start index to 500 to test the rest
 file_list = random.sample(sorted(os.listdir(folder_path)), total)[start_index:start_index+num_photos]
@@ -21,8 +23,8 @@ np.save("Analyzed_list" + "_" + folder_path, file_list)
 df = pd.read_csv("im2gps3k_places365.csv")
 
 use_database_search = True
-num_nearest_neighbors = 8
-num_farthest_neighbors = 8
+num_nearest_neighbors = 4
+num_farthest_neighbors = 1
 skipped = 0
 total = 0
 i = 0
@@ -39,7 +41,7 @@ for file in tqdm(file_list, desc="Processing"):
     true = (lat, long)
     
     image_path = folder_path + '/' + file
-    GPT_Agent = GPT4v2Loc(device="cpu")
+    GPT_Agent = GPT4v2Loc_multi(device="cpu")
 
     GPT_Agent.set_image(image_path, use_database_search = use_database_search, num_neighbors = num_nearest_neighbors, num_farthest = num_farthest_neighbors)
 
@@ -60,21 +62,14 @@ for file in tqdm(file_list, desc="Processing"):
         elif(distance <= 2500): accuracies[4] += 1
 
         total += 1
-        if(total % 10 == 0): np.save(folder_path + '_newprompt_accuracies_' + str(total) + '_of_' + str(i), accuracies / total)
+        if(total % 10 == 0): np.save(folder_path + '_multi_accuracies_' + str(total) + '_of_' + str(i), accuracies / total)
 
     except:
         skipped += 1
-
-
 
 accuracies /= total
 print(str(total) + " out of " + str(num_photos) + " successfully analyzed.")
 print(accuracies)
     
 #np.save(folder_path + '_accuracies_' + str(total) + '_of_' + str(num_photos), accuracies)
-np.save(folder_path + '_newprompt_accuracies_' + str(total) + '_of_' + str(num_photos), accuracies)
-
-
-
-
-
+np.save(folder_path + '_multi_accuracies_' + str(total) + '_of_' + str(num_photos), accuracies)
