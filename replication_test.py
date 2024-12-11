@@ -9,32 +9,33 @@ from tqdm import tqdm
 from geopy.distance import geodesic
 from apikey import API_KEY
 
-folder_path = "nov_dec_2023_photos"
+folder_path = "im2gps3ktest"
 random.seed(42)
 total = len(os.listdir(folder_path))
-num_photos = 20
-start_index = 0
+num_photos = 3
+start_index = 147 + 350
 #Change start index to 500 to test the rest
 file_list = random.sample(sorted(os.listdir(folder_path)), total)[start_index:start_index+num_photos]
 np.save("Analyzed_list" + "_" + folder_path, file_list)
 
-df = pd.read_csv("nov_dec_2023.csv")
+df = pd.read_csv("im2gps3k_places365.csv")
 
 use_database_search = True
 num_nearest_neighbors = 8
 num_farthest_neighbors = 8
 skipped = 0
 total = 0
+i = 0
 
 pattern = r"(-?\d+\.?\d*),\s*(-?\d+\.?\d*)"
 
 accuracies = np.zeros(5)
 
 for file in tqdm(file_list, desc="Processing"):
-    index = int(file[:file.find('-')])
-    #The dataset has these mixed up
-    long = df.iloc[index]['photo_location_latitude']
-    lat = df.iloc[index]['photo_location_longitude']
+    i += 1
+    metadata = df[df["IMG_ID"] == file]
+    lat = metadata["LAT"].values[0]
+    long = metadata["LON"].values[0]
     true = (lat, long)
     
     image_path = folder_path + '/' + file
@@ -45,6 +46,7 @@ for file in tqdm(file_list, desc="Processing"):
     response = GPT_Agent.get_location(API_KEY, use_database_search)
     try:
         matches = re.search(pattern, response).group()
+        #Originally lat_str, lon_str, but GPT is consistently giving lon first for some reason
         lat_str, lon_str = matches.split(',')
         latitude = float(lat_str)
         longitude = float(lon_str)
@@ -61,6 +63,9 @@ for file in tqdm(file_list, desc="Processing"):
         total += 1
     except:
         skipped += 1
+
+
+
 accuracies /= total
 print(str(total) + " out of " + str(num_photos) + " successfully analyzed.")
 print(accuracies)
